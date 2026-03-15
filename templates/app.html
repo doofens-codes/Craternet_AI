@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>CraterNet.AI — NH-343 Road Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600;700&family=Noto+Sans+Display:wght@600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+
+<body>
+
+  <!-- ══ HEADER ══ -->
+  <header id="app-header" style="display:none">
+    <div class="header-left">
+      <div class="gov-emblem">🛣️</div>
+      <div>
+        <div class="site-title">CraterNet.AI</div>
+        <div class="site-subtitle">NH-343 · ROAD INTELLIGENCE PORTAL</div>
+      </div>
+      <div class="header-divider"></div>
+      <div class="nav-chips" id="header-stats" style="display:none">
+        <div class="stat-pill">Total <span class="val" id="h-total">—</span></div>
+        <div class="stat-pill">Severe <span class="val danger" id="h-severe">—</span></div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙 Dark</button>
+      <button class="nav-btn" id="btn-map" onclick="showPage('map')">Live Map</button>
+      <button class="nav-btn" id="btn-report" onclick="requireAuth(()=>showPage('report'))"
+        style="display:none">Report</button>
+      <button class="nav-btn active" id="btn-login" onclick="showPage('login')">Citizen Login</button>
+      <button class="nav-btn admin-btn" onclick="showPage('admin-login')">Admin</button>
+    </div>
+  </header>
+
+  <!-- ══ PAGE: LANDING ══ -->
+  <div id="page-landing" class="page">
+    <div class="landing-hero">
+      <div class="landing-content">
+        <div class="landing-badge">AI-POWERED · NH-343 · CHHATTISGARH</div>
+        <h1 class="landing-title">Smarter Roads<br>Start Here</h1>
+        <p class="landing-desc">
+          CraterNet.AI uses computer vision to autonomously detect, classify, and report
+          road damage on National Highway 343. Verified reports are automatically escalated
+          to NHAI with geo-tagged evidence.
+        </p>
+        <div class="landing-actions">
+          <button class="btn-primary large" onclick="showPage('map')">View Live Map</button>
+          <button class="btn-outline large" onclick="showPage('login')">Report a Pothole</button>
+        </div>
+        <div class="landing-stats">
+          <div class="lstat"><span id="l-total">—</span><small>Detected</small></div>
+          <div class="lstat"><span id="l-severe">—</span><small>Severe</small></div>
+          <div class="lstat"><span id="l-resolved">—</span><small>Resolved</small></div>
+        </div>
+      </div>
+      <div class="landing-map-preview" id="landing-map"></div>
+    </div>
+    <div class="how-it-works">
+      <h2>How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-title">Detect</div>
+          <div class="step-desc">YOLOv8 model identifies potholes from citizen photos and satellite imagery</div>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-title">Verify</div>
+          <div class="step-desc">GPS confirms you're on NH-343. Road validation prevents false reports.</div>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-title">Report</div>
+          <div class="step-desc">Technical PDF auto-generated and addressed to NHAI Regional Office, Raipur</div>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-title">Resolve</div>
+          <div class="step-desc">Admin tracks repair status. Resolved potholes marked green on live map.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: MAP ══ -->
+  <div id="page-map" class="page" style="display:none">
+    <div class="map-layout">
+      <div id="main-map"></div>
+      <div class="map-sidebar">
+        <div class="sidebar-header">
+          <span>NH-343 Detections</span>
+          <span id="det-count" class="count-badge">—</span>
+        </div>
+        <div class="det-list" id="det-list"></div>
+        <div class="legend-strip">
+          <div class="leg">
+            <div class="leg-dot" style="background:var(--red)"></div>Severe
+          </div>
+          <div class="leg">
+            <div class="leg-dot" style="background:var(--yellow)"></div>Moderate
+          </div>
+          <div class="leg">
+            <div class="leg-dot" style="background:var(--green)"></div>Resolved
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: LOGIN (OTP) ══ -->
+  <div id="page-login" class="page auth-page" style="display:none">
+    <div class="auth-card">
+      <div class="auth-logo">🛣️</div>
+      <h2 class="auth-title">Citizen Portal</h2>
+      <p class="auth-sub">Sign in with your mobile number to report potholes on NH-343</p>
+
+      <div id="otp-step-1">
+        <div class="field-label">Mobile Number</div>
+        <div class="phone-input-row">
+          <span class="country-code">+91</span>
+          <input class="auth-input" type="tel" id="phone-input" placeholder="10-digit mobile number" maxlength="10"
+            pattern="[0-9]{10}">
+        </div>
+        <div id="recaptcha-container" style="margin: 12px;;"></div>
+        <button class="btn-primary" style="width:100%;margin-top:12px" onclick="sendOTP()">
+          Send OTP
+        </button>
+      </div>
+
+      <div id="otp-step-2" style="display:none">
+        <div class="field-label">Enter OTP</div>
+        <p class="auth-sub" style="margin-bottom:12px">Sent to +91 <span id="phone-display"></span></p>
+        <input class="auth-input" type="number" id="otp-input" placeholder="6-digit OTP" maxlength="6">
+        <button class="btn-primary" style="width:100%;margin-top:12px" onclick="verifyOTP()">Verify &amp;
+          Continue</button>
+        <button class="btn-outline" style="width:100%;margin-top:8px" onclick="resetOTP()">← Change Number</button>
+      </div>
+
+      <div class="auth-msg" id="auth-msg"></div>
+      <div style="margin-top:16px;font-size:11px;color:var(--muted);text-align:center">
+        Your phone number is used only for authentication.<br>It is not stored or shared.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: REPORT ══ -->
+  <div id="page-report" class="page auth-page" style="display:none">
+    <div class="report-card">
+      <h2 class="auth-title" style="text-align:left;margin-bottom:4px">Report a Pothole</h2>
+      <p class="auth-sub" style="margin-bottom:16px">You must be on NH-343. GPS is required.</p>
+
+      <!-- GPS status -->
+      <div class="gps-bar" id="gps-bar">
+        <div class="gps-indicator" id="gps-indicator">⊙</div>
+        <span id="gps-text">Acquiring GPS location...</span>
+      </div>
+
+      <!-- Upload -->
+      <div class="field-label" style="margin-top:14px">Photograph</div>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" accept="image/*" capture="environment">
+        <div class="drop-icon">📷</div>
+        <div class="drop-text"><strong>Tap to take photo</strong> or upload from gallery</div>
+      </div>
+      <img id="preview-img" alt="preview">
+
+      <button class="btn-primary" id="submit-btn" style="width:100%;margin-top:14px" onclick="submitReport()" disabled>
+        <span id="btn-text">Analyse &amp; Submit</span>
+        <div class="spinner" id="spinner"></div>
+      </button>
+
+      <!-- Result -->
+      <div id="result-box" style="display:none">
+        <div class="result-banner" id="result-banner"></div>
+        <img id="result-annotated" alt="annotated" style="width:100%;display:none;border-radius:6px;margin-top:8px">
+        <div id="pdf-notice" style="display:none" class="pdf-notice">
+          📄 Technical report auto-generated and queued for NHAI Raipur
+        </div>
+        <a class="complaint-cta" href="https://pgportal.gov.in/Signin" target="_blank" id="complaint-link"
+          style="display:none">
+          Also register on PG Portal →
+        </a>
+      </div>
+
+      <button class="btn-outline" style="width:100%;margin-top:12px" onclick="showPage('map')">← Back to Map</button>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: ADMIN LOGIN ══ -->
+  <div id="page-admin-login" class="page auth-page" style="display:none">
+    <div class="auth-card">
+      <div class="auth-logo">🔐</div>
+      <h2 class="auth-title">Admin Portal</h2>
+      <p class="auth-sub">Authorised personnel only</p>
+      <div class="field-label">Password</div>
+      <input class="auth-input" type="password" id="admin-pw" placeholder="Enter admin password"
+        onkeydown="if(event.key==='Enter')adminLogin()">
+      <button class="btn-primary" style="width:100%;margin-top:12px" onclick="adminLogin()">Sign In →</button>
+      <div class="auth-msg" id="admin-msg"></div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: ADMIN DASHBOARD ══ -->
+  <div id="page-admin" class="page" style="display:none">
+    <div class="admin-stats-bar">
+      <div class="astat">
+        <div class="astat-val" id="a-total" style="color:var(--blue)">—</div>
+        <div class="astat-lbl">Total</div>
+      </div>
+      <div class="astat">
+        <div class="astat-val" id="a-severe" style="color:var(--red)">—</div>
+        <div class="astat-lbl">Severe</div>
+      </div>
+      <div class="astat">
+        <div class="astat-val" id="a-moderate" style="color:var(--yellow)">—</div>
+        <div class="astat-lbl">Moderate</div>
+      </div>
+      <div class="astat">
+        <div class="astat-val" id="a-resolved" style="color:var(--green)">—</div>
+        <div class="astat-lbl">Resolved</div>
+      </div>
+      <div class="astat">
+        <div class="astat-val" id="a-reports" style="color:var(--blue)">—</div>
+        <div class="astat-lbl">PDF Reports</div>
+      </div>
+    </div>
+    <div class="admin-layout">
+      <div id="admin-map"></div>
+      <div class="admin-panel">
+        <div class="panel-tabs">
+          <button class="ptab active" onclick="switchPanel('detections',this)">DETECTIONS</button>
+          <button class="ptab" onclick="switchPanel('complaints',this)">COMPLAINTS</button>
+          <button class="ptab" onclick="switchPanel('reports',this)">PDF REPORTS</button>
+        </div>
+        <div id="panel-detections" class="panel-content active" style="display:flex"></div>
+        <div id="panel-complaints" class="panel-content" style="display:none"></div>
+        <div id="panel-reports" class="panel-content" style="display:none"></div>
+        <div class="legend-strip">
+          <div class="leg">
+            <div class="leg-dot" style="background:var(--red)"></div>Severe
+          </div>
+          <div class="leg">
+            <div class="leg-dot" style="background:var(--yellow)"></div>Moderate
+          </div>
+          <div class="leg">
+            <div class="leg-dot" style="background:var(--green)"></div>Resolved
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <!-- <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script> -->
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <!-- App modules -->
+  <script src="/static/js/firebase.js"></script>
+  <script src="/static/js/map.js"></script>
+  <script src="/static/js/upload.js"></script>
+  <script src="/static/js/admin.js"></script>
+  <script src="/static/js/app.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment variables
+.env
+
+# Firebase private key — NEVER commit this
+firebase-admin-key.json
+
+# Model weights — too large for git
+models/
+*.pt
+*.pth
+
+# Generated data
+data/reports/
+static/uploads/
+static/results/
+
+# Keep the data folder structure but not contents
+!data/.gitkeep
+!data/detections.json
+!data/nh343_ways.json
+!static/uploads/.gitkeep
+!static/results/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Logs
+*.log
+flask.log
+
+# ngrok
+ngrok.exe
+ngrok
